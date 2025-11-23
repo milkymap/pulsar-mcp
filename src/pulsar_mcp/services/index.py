@@ -25,7 +25,6 @@ class IndexService:
                     distance=models.Distance.COSINE
                 )
             )
-    
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
