@@ -355,9 +355,9 @@ class MCPServer:
 
         @mcp.tool(
             name="execute_tool",
-            description="Execute a specific tool on a running MCP server with provided arguments. Preserves original tool output format (text, images, JSON, etc.). Server must be started first via manage_server."
+            description="Execute a specific tool on a running MCP server with provided arguments. Preserves original tool output format (text, images, JSON, etc.). Server must be started first via manage_server. Use priority to control background task scheduling (lower numbers = higher priority)."
         )
-        async def execute_tool(server_name: str, tool_name: str, arguments: dict = None, timeout:float=60, in_background:bool=False) -> ToolResult:
+        async def execute_tool(server_name: str, tool_name: str, arguments: dict = None, timeout:float=60, in_background:bool=False, priority:int=1) -> ToolResult:
             try:
                 if isinstance(arguments, str):
                     arguments = json.loads(arguments)
@@ -367,7 +367,8 @@ class MCPServer:
                     tool_name=tool_name,
                     arguments=arguments,
                     timeout=timeout,
-                    in_background=in_background
+                    in_background=in_background,
+                    priority=priority
                 )
                 return ToolResult(content=result)
             except Exception as e:
