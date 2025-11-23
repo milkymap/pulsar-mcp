@@ -24,26 +24,32 @@ class MCPServer:
             Discovery: Search for tools using natural language - find what you need without knowing exact names
             Exploration: Browse servers and tools with guided next-step recommendations
             Management: Start/stop servers and execute tools with proper schema validation
+            Background Execution: Run long-running tools asynchronously and track progress with task IDs
             Progressive: Minimal results first, detailed schemas only when needed for efficient token usage
             Start with semantic_search() to find relevant tools, then follow the guided workflow to execution.
+            For background tasks, use execute_tool() with in_background=True, then poll_task_result() to check status.
             """,
             lifespan=self.lifespan
         )
     
-    async def run_server(self):
-        #await self.mcp.run_async(transport="stdio")
-        await self.mcp.run_async(transport="http", host="localhost", port=8000)
+    async def run_server(self, transport:str, host:Optional[str]=None, port:Optional[int]=None):
+        match transport:
+            case "stdio":
+                await self.mcp.run_async(transport="stdio")
+            case "http":
+                if host is None or port is None:
+                    logger.error("Host and port must be specified for HTTP transport")
+                    raise ValueError("Host and port must be specified for HTTP transport")
+                await self.mcp.run_async(transport="http", host=host, port=port)
+            case _:
+                logger.error(f"Unsupported transport: {transport}")
+                raise ValueError(f"Unsupported transport: {transport}")
 
     @asynccontextmanager
     async def lifespan(self, mcp:FastMCP):
         async with MCPEngine(self.api_keys_settings) as mcp_engine:
-            try:
-                mcp_config = mcp_engine.load_mcp_config(self.mcp_config_filepath)
-                mcp_engine.mcp_config = mcp_config
-                await mcp_engine.index_mcp_servers(mcp_config)
-            except Exception as e:
-                logger.error(f"Failed to load/index MCP config: {e}")
-
+            mcp_engine.load_mcp_config(self.mcp_config_filepath)
+            await mcp_engine.index_mcp_servers()
             self.define_tools(mcp, mcp_engine)
             yield
 
@@ -114,7 +120,7 @@ class MCPServer:
         async def get_server_info(server_name: str) -> ToolResult:
             try:
                 server_info = await mcp_engine.index_service.get_server(server_name)
-
+                
                 if server_info is None:
                     return ToolResult(
                         content=[TextContent(type="text", text=f"Server '{server_name}' not found in index")]
@@ -351,20 +357,65 @@ class MCPServer:
             name="execute_tool",
             description="Execute a specific tool on a running MCP server with provided arguments. Preserves original tool output format (text, images, JSON, etc.). Server must be started first via manage_server."
         )
-        async def execute_tool(server_name: str, tool_name: str, arguments: dict = None, timeout:float=60) -> ToolResult:
+        async def execute_tool(server_name: str, tool_name: str, arguments: dict = None, timeout:float=60, in_background:bool=False) -> ToolResult:
             try:
                 if isinstance(arguments, str):
                     arguments = json.loads(arguments)
+                
                 result = await mcp_engine.execute_tool(
                     server_name=server_name,
                     tool_name=tool_name,
                     arguments=arguments,
-                    timeout=timeout
+                    timeout=timeout,
+                    in_background=in_background
                 )
                 return ToolResult(content=result)
-
             except Exception as e:
                 return ToolResult(
                     content=[TextContent(type="text", text=f"Execution failed: {str(e)}")]
                 )
-            
+
+        @mcp.tool(
+            name="poll_task_result",
+            description="Check the status and result of a background task using its task ID. Returns task status (running/completed/failed) and results if available. Essential for tracking long-running background tool executions."
+        )
+        async def poll_task_result(task_id: str) -> ToolResult:
+            try:
+                is_done, result_content, error_msg = await mcp_engine.poll_task_result(task_id)
+
+                if error_msg:
+                    return ToolResult(
+                        content=[TextContent(type="text", text=f"Task polling failed: {error_msg}")]
+                    )
+
+                if not is_done:
+                    status_text = f"Background task {task_id} is still running."
+                    guidance_text = "Next steps:\\n"
+                    guidance_text += f"• Check again later using poll_task_result('{task_id}')\\n"
+                    guidance_text += "• Background tasks may take time to complete depending on complexity"
+
+                    return ToolResult(
+                        content=[
+                            TextContent(type="text", text=status_text),
+                            TextContent(type="text", text=guidance_text)
+                        ]
+                    )
+
+                # Task completed successfully
+                status_text = f"Background task {task_id} completed successfully."
+
+                # Return the original tool result content
+                content_blocks = [TextContent(type="text", text=status_text)]
+                if result_content:
+                    content_blocks.extend(result_content)
+
+                guidance_text = "Task completed! Results are shown above.\\n"
+                guidance_text += "The task has been removed from the background queue."
+                content_blocks.append(TextContent(type="text", text=guidance_text))
+
+                return ToolResult(content=content_blocks)
+
+            except Exception as e:
+                return ToolResult(
+                    content=[TextContent(type="text", text=f"Failed to poll task result: {str(e)}")]
+                )
