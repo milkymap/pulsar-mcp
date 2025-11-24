@@ -1,10 +1,6 @@
-import numpy as np 
-from numpy.typing import NDArray
-
 from openai import AsyncOpenAI
 from openai.types.create_embedding_response import CreateEmbeddingResponse
 from openai.types.embedding import Embedding
-
 
 from typing import List, Self
 from ..log import logger
@@ -25,6 +21,10 @@ class EmbeddingService:
             logger.exception(traceback)
 
     async def create_embedding(self, texts: list[str]) -> List[List[float]]:
+        # must use tiktoken to estimate token per input... max token per input <= 8192
+        # total input tokens per request <= 300_000 tokens 
+        # a future implementation must handle chunking of inputs that exceed these limits
+        # and batching of requests to stay within rate limits
         response:CreateEmbeddingResponse = await self.client.embeddings.create(
             input=texts,
             model=self.embedding_model_name,
@@ -33,8 +33,16 @@ class EmbeddingService:
         embeddings = [item.embedding for item in response.data]
         return embeddings
     
-    def weighted_embedding(self, base_embedding:List[float], corpus_embeddings:List[List[float]], alpha:float=0.1) -> List[List[float]]:
-        base_embedding_array = np.array(base_embedding)
-        corpus_embeddings_array = np.array(corpus_embeddings)
-        weighted_corpus_embeddings = alpha * base_embedding_array + (1 - alpha) * corpus_embeddings_array
-        return weighted_corpus_embeddings.tolist()
+    def inject_base_into_corpus(self, base_embedding:List[float], corpus_embeddings:List[List[float]], alpha:float=0.1) -> List[List[float]]:
+        beta = 1.0 - alpha
+        injected_corpus = []
+        
+        for corpus_vec in corpus_embeddings:
+            # alpha * base + beta * corpus
+            injected = [
+                alpha * base_embedding[i] + beta * corpus_vec[i] 
+                for i in range(len(base_embedding))
+            ]
+            injected_corpus.append(injected)
+        
+        return injected_corpus
