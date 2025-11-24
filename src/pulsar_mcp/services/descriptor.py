@@ -3,15 +3,11 @@ import asyncio
 
 from openai import AsyncOpenAI
 from openai.types.chat import ParsedChatCompletion
-from typing import List, Dict, Optional, Any, Tuple, Self  
-
-from mcp import StdioServerParameters, ClientSession, stdio_client
-from mcp.types import ListToolsResult
+from typing import List, Dict, Any, Self  
 
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-
-from ..types import McpStartupConfig, McpServerDescription, McpServerFullDescription
+from ..types import McpServerDescription, McpServerToolDescription
 from ..log import logger
 
 class DescriptorService:
@@ -27,22 +23,6 @@ class DescriptorService:
         if exc_type is not None:
             logger.error(f"Exception in EmbeddingService context manager: {exc_value}")
             logger.exception(traceback)
-
-    async def tools_to_string(self, tools_results:ListToolsResult) -> str:
-        tools = []
-        for tool in tools_results.tools:
-            tools.append(
-                json.dumps(
-                    {
-                        'type': 'tool',
-                        'name': tool.name,
-                        'description': tool.description,
-                        'inputSchema': tool.inputSchema
-                    }
-                )
-            )
-        
-        return "\n###\n".join(tools) if tools else "No tools available."
     
     @retry(
         stop=stop_after_attempt(3),
@@ -85,15 +65,12 @@ class DescriptorService:
         retry=retry_if_exception_type((ConnectionError, TimeoutError)),
         reraise=True
     )
-    async def enhance_tool(self, tool_name: str, tool_description: str, tool_schema: Dict[str, Any], server_name: str) -> str:
+    async def describe_mcp_server_tool(self, tool_name: str, tool_description: str, tool_schema: Dict[str, Any], server_name: str) -> McpServerToolDescription:
         system_prompt = """
-        Generate a comprehensive tool description for semantic search and retrieval.    
-        Write a detailed paragraph that explains:
-            - What the tool does and its primary purpose
-            - When and why to use this tool
-            - Key parameters and their significance
-            - Expected outcomes or return values
-            - Practical use cases and scenarios
+        Generate a comprehensive tool description for semantic search and retrieval with:
+        - title: Clear, specific technical title
+        - summary: detailed paragraph summarizing the tool's purpose and functionality
+        - utterances: 5-7 example commands or queries that would invoke this tool    
         Be specific, clear, and include relevant keywords for search matching."""
         user_prompt = f"""Server: {server_name}
         Tool Name: {tool_name}
@@ -102,33 +79,17 @@ class DescriptorService:
         Generate the enhanced description.
         """
 
-        completion_response = await self.client.chat.completions.create(
+        completion_response = await self.client.beta.chat.completions.parse(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             model=self.openai_model_name,
-            max_tokens=512
+            max_tokens=1024,
+            response_format=McpServerToolDescription
         )
-        
-        return completion_response.choices[0].message.content
-    
-    async def describe_mcp_server(self, server_name:str, mcp_startup_config:McpStartupConfig, timeout:int=50) -> McpServerFullDescription:
-        server_parameters = StdioServerParameters(
-            command=mcp_startup_config.command,
-            args=mcp_startup_config.args,
-            env=mcp_startup_config.env
-        )
-        async with stdio_client(server=server_parameters) as transport:
-            read, write = transport 
-            async with ClientSession(read, write) as session:
-                async with asyncio.timeout(delay=timeout):
-                    await session.initialize()
-                logger.info("Initialized MCP session")
-                tools_result = await session.list_tools()
-                logger.info(f"Retrieved {len(tools_result.tools)} tools from MCP server")
-        mcp_description = await self.generate_description(server_name=server_name, tools_result=tools_result)
-        return mcp_description
+        enhanced_tool:McpServerToolDescription = completion_response.choices[0].message.parsed
+        return enhanced_tool
     
     @retry(
         stop=stop_after_attempt(3),
@@ -136,9 +97,7 @@ class DescriptorService:
         retry=retry_if_exception_type((ConnectionError, TimeoutError)),
         reraise=True
     )
-    async def generate_description(self, server_name:str, tools_result:ListToolsResult) -> McpServerFullDescription:
-        tools = await self.tools_to_string(tools_result)
-
+    async def describe_mcp_server(self, server_name:str, enhanced_tools:List[McpServerToolDescription]) -> McpServerDescription:
         system_prompt = """
         Generate a concise MCP server description with:
         - title: Clear, specific sentence that describes the server
@@ -155,7 +114,7 @@ class DescriptorService:
                     "role": "user", 
                     "content": [
                         {"type": "text", "text": f"Generate a comprehensive description of the server {server_name} based on the following information."},
-                        {"type": "text", "text": tools}
+                        *[ {"type": "text", "text": item.model_dump_json(indent=2)} for item in enhanced_tools]
                     ]
                 }
             ],
@@ -165,11 +124,8 @@ class DescriptorService:
         )
 
         server_descripton:McpServerDescription = completion_response.choices[0].message.parsed
-        return McpServerFullDescription(
-            server_name=server_name,
-            server_description=server_descripton,
-            tools=tools_result
-        )
+        return server_descripton
+          
    
 
 
