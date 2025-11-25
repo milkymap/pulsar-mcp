@@ -21,6 +21,7 @@ from .settings import ApiKeysSettings
 from .services.embedding import EmbeddingService
 from .services.descriptor import DescriptorService
 from .services.index import IndexService
+from .services.content_manager import ContentManager
 from .types import McpServersConfig, McpStartupConfig, McpServerDescription, McpServerToolDescription
 from .utilities import retrieve_mcp_server_tool
 
@@ -47,10 +48,18 @@ class MCPEngine:
         index_service = IndexService(index_name=self.api_keys_settings.INDEX_NAME, dimensions=self.api_keys_settings.DIMENSIONS, qdrant_storage_path=self.api_keys_settings.QDRANT_STORAGE_PATH)
         embedding_service = EmbeddingService(api_key=self.api_keys_settings.OPENAI_API_KEY, embedding_model_name=self.api_keys_settings.EMBEDDING_MODEL_NAME, dimension=self.api_keys_settings.DIMENSIONS)
         descriptor_service = DescriptorService(openai_api_key=self.api_keys_settings.OPENAI_API_KEY, openai_model_name=self.api_keys_settings.DESCRIPTOR_MODEL_NAME)
+        content_manager = ContentManager(
+            storage_path=self.api_keys_settings.CONTENT_STORAGE_PATH,
+            openai_api_key=self.api_keys_settings.OPENAI_API_KEY,
+            max_tokens=self.api_keys_settings.MAX_RESULT_TOKENS,
+            describe_images=self.api_keys_settings.DESCRIBE_IMAGES,
+            vision_model=self.api_keys_settings.VISION_MODEL_NAME
+        )
 
         self.index_service = await self.resources_manager.enter_async_context(index_service)
         self.embedding_service = await self.resources_manager.enter_async_context(embedding_service)
         self.descriptor_service = await self.resources_manager.enter_async_context(descriptor_service)
+        self.content_manager = await self.resources_manager.enter_async_context(content_manager)
 
         for _ in range(self.api_keys_settings.BACKGROUND_MCP_TOOL_QUEUE_MAX_SUBSCRIBERS):
             task = asyncio.create_task(self.subscriber())
@@ -459,20 +468,22 @@ class MCPEngine:
             arguments=arguments,
             timeout=timeout
         )
-        return result
+        processed_result = await self.content_manager.process_content(result)
+        return processed_result
 
     async def poll_task_result(self, task_id:str) -> Tuple[bool, Optional[List[ContentBlock]], Optional[str]]:
         task = self.background_tasks.get(task_id)
         if not task:
             return False, None, f"No background task found with ID {task_id}"
-        
+
         if not task.done():
-            return False, None, None 
-        
+            return False, None, None
+
         try:
             result = task.result()
             del self.background_tasks[task_id]
-            return True, result, None
+            processed_result = await self.content_manager.process_content(result)
+            return True, processed_result, None
         except Exception as e:
             del self.background_tasks[task_id]
             return False, None, str(e)
