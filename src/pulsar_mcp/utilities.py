@@ -10,6 +10,9 @@ from mcp.types import ListToolsResult
 from .types import McpServersConfig, McpStartupConfig
 from .log import logger 
 
+def estimate_tokens(text: str) -> int:
+      return len(text) // 4
+
 def load_mcp_config(mcp_config_filepath: str) -> McpServersConfig:
     try:
         config_path = Path(mcp_config_filepath)
