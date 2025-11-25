@@ -152,16 +152,7 @@ source .env  # or use: export $(cat .env | xargs)
 uvx pulsar-mcp index --config mcp-servers.json
 ```
 
-**Option 3: Use direnv (recommended for development)**
-```bash
-# Install direnv: https://direnv.net/
-echo "export OPENAI_API_KEY=sk-proj-..." > .envrc
-echo "export QDRANT_STORAGE_PATH=/home/user/qdrant_data" >> .envrc
-echo "export CONTENT_STORAGE_PATH=/home/user/content_storage" >> .envrc
-direnv allow .
-```
-
-**Note:** For stdio transport, environment variables must also be included in your MCP client config (see stdio transport section below).
+**Note:** For stdio transport, environment variables must also be included in your MCP client config (see [stdio transport section](#stdio-transport) below).
 
 ## Quick Start
 
