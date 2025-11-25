@@ -158,23 +158,45 @@ uvx pulsar-mcp index --config mcp-servers.json
 
 **1. Create your MCP servers config** (`mcp-servers.json`):
 
+This is an enhanced schema of Claude Desktop's MCP configuration with additional Pulsar-specific fields.
+
 ```json
 {
   "mcpServers": {
     "filesystem": {
-      "command": "npx",
+      "command": "npx",  // or "uvx", "docker", any executable
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"],
-      "hints": ["file operations", "read write files"]
+      "env": {},  // optional: environment variables for this server
+      "timeout": 30.0,  // optional: seconds to wait for MCP server startup (default: 30)
+      "hints": ["file operations", "read write files"],  // optional: help semantic search discover this server
+      "blocked_tools": [],  // optional: tools to index but block at runtime
+      "ignore": false,  // optional: skip indexing this server entirely
+      "overwrite": false  // optional: force re-indexing even if already indexed
     },
     "github": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {"GITHUB_TOKEN": "..."},
-      "blocked_tools": ["delete_repository"]
+      "blocked_tools": ["delete_repository", "fork_repository"]  // indexed but execution blocked
     }
   }
 }
 ```
+
+**Enhanced Configuration Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `command` | string | Executable to run (npx, uvx, docker, python, etc.) |
+| `args` | array | Command-line arguments passed to the executable |
+| `env` | object | Environment variables for this MCP server |
+| `timeout` | number | Seconds to wait for server startup (default: 30.0) |
+| `hints` | array | Keywords to help semantic search discover this server |
+| `blocked_tools` | array | Tool names that will be indexed but blocked from execution |
+| `ignore` | boolean | If true, skip indexing this server entirely (default: false) |
+| `overwrite` | boolean | If true, force re-index even if already indexed (default: false) |
+
+**Note:** The `command`, `args`, and `env` fields are standard MCP configuration. The other fields are Pulsar enhancements for better control and discovery.
 
 **2. Set environment variables**:
 
@@ -304,30 +326,6 @@ execute_tool("filesystem", "read_file", {"path": "/data/sales.csv"})
 | `execute_tool` | Run tools with optional background mode |
 | `poll_task_result` | Check background task status |
 | `get_content` | Retrieve offloaded content by reference |
-
-## Configuration
-
-### Server Options
-
-```json
-{
-  "command": "npx|uvx|docker",
-  "args": ["arg0", "arg1", "...", "argN"],
-  "env": {"API_KEY": "..."},
-  "timeout": 30.0,
-  "hints": ["optional", "discovery hints"],
-  "blocked_tools": ["dangerous_tool"],
-  "ignore": false,
-  "overwrite": false
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `hints` | Help semantic search find this server |
-| `blocked_tools` | Tools indexed but blocked at runtime |
-| `ignore` | Skip indexing entirely |
-| `overwrite` | Re-index even if already indexed |
 
 ## Content Management
 
