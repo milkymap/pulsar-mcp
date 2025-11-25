@@ -70,7 +70,7 @@ From ~60K tokens to ~3K. Access to everything, cost of almost nothing.
 
 Claude Code generated a video using Pulsar to coordinate multiple MCP servers.
 
-🎥 **[Watch the generated video](https://drive.google.com/file/d/1w4JHzsyr_9bzSDIxw1aU0dVIFKWrtz4F/view?usp=sharing)**
+🎥 https://github.com/user-attachments/assets/c8715bdd-815a-4f92-9e8f-95043450474b
 
 **The process:**
 
