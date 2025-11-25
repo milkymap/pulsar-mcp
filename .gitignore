@@ -12,3 +12,4 @@ wheels/
 .claude
 mcp-servers.json
 *.mp4
+*.gif
