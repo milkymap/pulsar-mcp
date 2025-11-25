@@ -15,6 +15,8 @@ from pathlib import Path
 from mcp import StdioServerParameters, ClientSession, stdio_client
 from mcp.types import Tool, ContentBlock, ListToolsResult
 
+from tiktoken import encoding_for_model
+
 from .settings import ApiKeysSettings
 from .services.embedding import EmbeddingService
 from .services.descriptor import DescriptorService
@@ -30,7 +32,6 @@ class MCPEngine:
         self.mcp_config = mcp_config
         
     async def __aenter__(self) -> Self:
-        
         self.mcp_server_tasks:Dict[str, asyncio.Task] = {}
         self.subscriber_tasks:Set[asyncio.Task] = set()
         self.background_tasks:Dict[str, asyncio.Task] = {}
@@ -111,10 +112,15 @@ class MCPEngine:
         logger.info(f"Starting indexing of {len(self.mcp_config.mcpServers)} MCP servers")
         tasks:List[asyncio.Task] = []
         for server_name, startup_config in self.mcp_config.mcpServers.items():
+            if startup_config.ignore:
+                logger.info(f"Server '{server_name}' is marked to be ignored. Skipping indexing.")
+                continue
+            
             server_info = await self.index_service.get_server(server_name=server_name)  # Preload server to check existence
-            if server_info is not None and not startup_config.reindex:    
+            if server_info is not None and not startup_config.overwrite:    
                 logger.info(f"Server '{server_name}' already indexed and reindex not requested. Skipping.")
                 continue
+
             
             task = asyncio.create_task(
                 self.protected_index_single_mcp_server(server_name, startup_config)
@@ -227,14 +233,14 @@ class MCPEngine:
         while True:
             try:
                 task = await self.priority_queue.get()
-                priority, (server_name, tool_name, arguments, task_id) = task
+                priority, (server_name, tool_name, arguments, timeout, task_id) = task
                 logger.info(f"Processing background tool task {task_id} for tool '{tool_name}' on server '{server_name}' with priority {priority}")
                 task_handler = asyncio.create_task(
                     self.handle_tool_call(
                         server_name=server_name,
                         tool_name=tool_name,
                         arguments=arguments,
-                        timeout=120
+                        timeout=timeout
                     )
                 )
                 self.background_tasks[task_id] = task_handler
@@ -245,25 +251,25 @@ class MCPEngine:
             except asyncio.CancelledError:
                 break 
 
-    async def call_tool(self, session:ClientSession, encoded_tool_name:bytes, encdoded_tool_arguments:bytes) -> bytes:
+    async def call_mcp_tool(self, session:ClientSession, tool_name:str, tool_arguments:Dict, timeout:float=60) -> bytes:
         try:
-            tool_name = encoded_tool_name.decode('utf-8')
-            tool_arguments = json.loads(encdoded_tool_arguments.decode('utf-8'))
-            
-            result = await session.call_tool(name=tool_name, arguments=tool_arguments)
-            content = []
-            for content_block in result.content:  # check content type
-                content_block_dict = content_block.model_dump()
-                content_block_dict.pop("annotations", None)
-                content_block_dict.pop("meta", None)
-                content.append(content_block_dict)
-            
-            response_payload = json.dumps({"status": True, "content": content}).encode('utf-8')
+            async with asyncio.timeout(delay=timeout):
+                result = await session.call_tool(name=tool_name, arguments=tool_arguments)
+                content = []
+                for content_block in result.content:  # check content type
+                    content_block_dict = content_block.model_dump()
+                    content_block_dict.pop("annotations", None)
+                    content_block_dict.pop("meta", None)
+                    content.append(content_block_dict)    
+                tool_call_result = json.dumps({"status": True, "content": content}).encode('utf-8')
+        except TimeoutError:
+            logger.error(f"Timeout while executing tool '{tool_name}'")
+            tool_call_result = json.dumps({"status": False, "error_message": "Tool execution timed out"}).encode('utf-8')
         except Exception as e:
             logger.error(f"Error executing tool '{tool_name}': {e}")
-            response_payload = json.dumps({"status": False, "error_message": str(e)}).encode('utf-8')
+            tool_call_result = json.dumps({"status": False, "error_message": str(e)}).encode('utf-8')
         
-        return response_payload
+        return tool_call_result
         
     async def background_mcp_server(self, server_name:str, mcp_startup_config:McpStartupConfig, timeout:int=50):
         server_parameters = StdioServerParameters(
@@ -315,23 +321,21 @@ class MCPEngine:
                     if not hmap_socket_flag:
                         continue
                     
-                    if not keep_loop:
-                        logger.info("Shutting down background MCP server loop")
-                        break
-
                     if not router_socket in hmap_socket_flag:
                         continue
 
                     if hmap_socket_flag[router_socket] != zmq.POLLIN:
                         continue
 
-                    caller_id, _, encoded_tool_name, encdoded_tool_arguments = await router_socket.recv_multipart()
-                    response_payload = await self.call_tool(
+                    caller_id, _, encoded_request = await router_socket.recv_multipart()
+                    plain_request:Dict = json.loads(encoded_request.decode('utf-8'))
+                    tool_call_result = await self.call_mcp_tool(
                         session=session,
-                        encoded_tool_name=encoded_tool_name,
-                        encdoded_tool_arguments=encdoded_tool_arguments
+                        tool_name=plain_request.get("tool_name", ""),
+                        tool_arguments=plain_request.get("tool_arguments", {}),
+                        timeout=plain_request.get("timeout", 60)
                     )
-                    await router_socket.send_multipart([caller_id, b"", response_payload])
+                    await router_socket.send_multipart([caller_id, b"", tool_call_result])
                 except asyncio.CancelledError:
                     logger.info("Background MCP server task cancelled")
                     keep_loop = False
@@ -408,17 +412,18 @@ class MCPEngine:
     async def handle_tool_call(self, server_name: str, tool_name: str, arguments: Optional[dict]=None, timeout:float=60) -> List[ContentBlock]:
         server_hash = sha256(server_name.encode('utf-8')).hexdigest()
         async with self.create_socket(zmq.DEALER, "connect", f"inproc://{server_hash}") as socket:
-            await socket.send_multipart([b"", tool_name.encode('utf-8'), json.dumps(arguments or {}).encode('utf-8')])
-            try:
-                async with asyncio.timeout(delay=timeout):
-                    _, encoded_response = await socket.recv_multipart()
-                    response:Dict = json.loads(encoded_response.decode('utf-8'))
-                    if response["status"]:
-                        return response["content"]
-                    error_message = response.get("error_message", "Unknown error")
-                    raise Exception(f"Error executing tool '{tool_name}' on server '{server_name}': {error_message}")
-            except TimeoutError:
-                raise Exception(f"Timeout waiting for tool '{tool_name}' response from server '{server_name}'")
+            await socket.send_multipart([b""], flags=zmq.SNDMORE)
+            await socket.send_json({
+                "tool_name": tool_name,
+                "tool_arguments": arguments or {},
+                "timeout": timeout
+            })
+            _, encoded_response = await socket.recv_multipart()
+            response:Dict = json.loads(encoded_response.decode('utf-8'))
+            if response["status"]:
+                return response["content"]
+            error_message = response.get("error_message", "Unknown error")
+            raise Exception(f"Error executing tool '{tool_name}' on server '{server_name}': {error_message}")
             
     async def execute_tool(self, server_name: str, tool_name: str, arguments: Optional[dict]=None, timeout:float=60, priority:int=1, in_background:bool=False) -> List[ContentBlock]:
         if not server_name in self.mcp_server_tasks:
@@ -432,7 +437,7 @@ class MCPEngine:
         
         if in_background:
             task_id = str(uuid4())
-            await self.priority_queue.put((priority, (server_name, tool_name, arguments, task_id)))
+            await self.priority_queue.put((priority, (server_name, tool_name, arguments, timeout, task_id)))
             logger.info(f"Queued tool '{tool_name}' on server '{server_name}' for background execution with priority {priority}")
             return [
                 {
@@ -459,7 +464,7 @@ class MCPEngine:
             return False, None, f"No background task found with ID {task_id}"
         
         if not task.done():
-            return False, None, f"Background task with ID {task_id} is still running"
+            return False, None, None 
         
         try:
             result = task.result()
@@ -472,3 +477,22 @@ class MCPEngine:
     def list_running_servers(self) -> list:
         running_server_names = list(self.mcp_server_tasks.keys())
         return running_server_names
+    
+    def list_servers_to_ignore(self) -> Optional[list]:
+        if not self.mcp_config:
+            return None 
+        
+        ignored_servers = [
+            server_name 
+            for server_name, startup_config in self.mcp_config.mcpServers.items() 
+            if startup_config.ignore
+        ]
+        return ignored_servers or None
+    
+    def get_server_hints(self, server_name:str) -> Optional[str]:
+        if not self.mcp_config or server_name not in self.mcp_config.mcpServers:
+            return None 
+        
+        startup_config = self.mcp_config.mcpServers[server_name]
+        return startup_config.hints
+        
