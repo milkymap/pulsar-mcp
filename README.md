@@ -394,6 +394,63 @@ uvx pulsar-mcp serve --config mcp-servers.json --transport stdio
 
 **Why index before mounting?** Indexing can take time with many servers. Pre-indexing ensures instant startup when your MCP client launches Pulsar.
 
+### Troubleshooting `uvx` Issues
+
+**Error: `spawn uvx ENOENT` or `command not found: uvx`**
+
+This means `uv` is not installed or not in your PATH. [See detailed troubleshooting guide](https://github.com/anthropics/anthropic-cookbook/blob/main/misc/mcp_local_server_troubleshooting.md).
+
+**Quick fixes:**
+
+1. **Install uv** (if not installed):
+   ```bash
+   # macOS/Linux
+   brew install uv
+
+   # or official installer
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. **Ensure uv is in PATH** (macOS/Linux):
+   ```bash
+   # Check if installed
+   which uvx
+
+   # If not found, add to PATH (add to ~/.zshrc or ~/.bashrc)
+   export PATH="$HOME/.local/bin:$PATH"
+
+   # Or create symlink
+   sudo ln -s ~/.local/bin/uvx /usr/local/bin/uvx
+   ```
+
+3. **Use absolute path** in config:
+   ```json
+   "command": "/Users/you/.local/bin/uvx"  // macOS example
+   ```
+
+**Alternative: Use mcp-remote for HTTP mode**
+
+If `uvx` issues persist, run Pulsar via HTTP and connect through `mcp-remote`:
+
+```bash
+# Terminal 1: Run Pulsar HTTP server
+uvx pulsar-mcp serve --config mcp-servers.json --transport http --port 8000
+```
+
+```json
+// Claude Desktop config
+{
+  "mcpServers": {
+    "pulsar": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:8000/mcp"]
+    }
+  }
+}
+```
+
+This bypasses stdio issues and works reliably across platforms.
+
 ## How It Works
 
 Pulsar exposes a single `semantic_router` tool that acts as a gateway to your entire MCP ecosystem:
