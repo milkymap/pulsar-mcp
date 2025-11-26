@@ -1,5 +1,5 @@
 import pytest
-from src.pulsar_mcp.types import (
+from src.omnimcp.types import (
     McpStartupConfig,
     McpServersConfig,
     McpServerDescription,

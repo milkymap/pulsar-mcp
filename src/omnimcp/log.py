@@ -5,5 +5,5 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(filename)s - %(lineno)03d - %(levelname)s - %(message)s'
 )
 
-logger = logging.getLogger(name='pulsar_mcp')
+logger = logging.getLogger(name='omnimcp')
 

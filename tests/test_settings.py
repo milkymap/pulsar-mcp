@@ -1,5 +1,5 @@
 import pytest
-from src.pulsar_mcp.settings import ApiKeysSettings
+from src.omnimcp.settings import ApiKeysSettings
 
 
 class TestApiKeysSettings:

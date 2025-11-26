@@ -1,4 +1,4 @@
-from pulsar_mcp import main 
+from omnimcp import main 
 
 if __name__ == '__main__':
     main()

@@ -23,7 +23,7 @@ class MCPServer:
     def __init__(self, mcp_engine:MCPEngine):
         self.mcp_engine = mcp_engine
         self.mcp = FastMCP(
-            name="pulsar_mcp",
+            name="omnimcp",
             instructions="""
             Pulsar MCP: Intelligent MCP Ecosystem Explorer
             I help you discover and manage MCP tools across your entire ecosystem through semantic search and progressive exploration.

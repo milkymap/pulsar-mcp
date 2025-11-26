@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-from src.pulsar_mcp.services.content_manager import ContentManager
+from src.omnimcp.services.content_manager import ContentManager
 
 
 @pytest.fixture

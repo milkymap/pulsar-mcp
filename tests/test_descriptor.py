@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from src.pulsar_mcp.services.descriptor import DescriptorService
-from src.pulsar_mcp.types import McpServerDescription, McpServerToolDescription
+from src.omnimcp.services.descriptor import DescriptorService
+from src.omnimcp.types import McpServerDescription, McpServerToolDescription
 
 
 @pytest.fixture

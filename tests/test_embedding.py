@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from src.pulsar_mcp.services.embedding import EmbeddingService
+from src.omnimcp.services.embedding import EmbeddingService
 
 
 @pytest.fixture

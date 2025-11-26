@@ -3,8 +3,8 @@ import tempfile
 import shutil
 from unittest.mock import AsyncMock, MagicMock, patch
 from qdrant_client import models
-from src.pulsar_mcp.services.index import IndexService
-from src.pulsar_mcp.types import McpServerDescription, McpServerToolDescription
+from src.omnimcp.services.index import IndexService
+from src.omnimcp.types import McpServerDescription, McpServerToolDescription
 
 
 @pytest.fixture

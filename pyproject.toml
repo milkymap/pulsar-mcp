@@ -1,5 +1,5 @@
 [project]
-name = "pulsar-mcp"
+name = "omnimcp"
 version = "0.1.0"
 description = "Semantic router for MCP ecosystems - Discover and execute tools across multiple MCP servers without context bloat"
 readme = "README.md"
@@ -8,7 +8,7 @@ authors = [
     { name = "BA Ibrahima", email = "ibrahima.ba@ouest-france.fr" }
 ]
 requires-python = ">=3.12"
-keywords = ["mcp", "model-context-protocol", "semantic-search", "llm", "ai-agents", "tool-routing"]
+keywords = ["mcp", "model-context-protocol", "semantic-search", "llm", "ai-agents", "tool-routing", "omnimcp"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -31,12 +31,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/milkymap/pulsar-mcp"
-Repository = "https://github.com/milkymap/pulsar-mcp"
-Issues = "https://github.com/milkymap/pulsar-mcp/issues"
+Homepage = "https://github.com/milkymap/omnimcp"
+Repository = "https://github.com/milkymap/omnimcp"
+Issues = "https://github.com/milkymap/omnimcp/issues"
 
 [project.scripts]
-pulsar-mcp = "pulsar_mcp:main"
+omnimcp = "omnimcp:main"
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]

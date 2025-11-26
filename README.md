@@ -1,20 +1,20 @@
 <div align="center">
 
-# Pulsar MCP
+# OmniMCP
 
 **Semantic router for MCP ecosystems**
 
 *Discover and execute tools across multiple MCP servers without context bloat*
 
-[![PyPI](https://img.shields.io/pypi/v/pulsar-mcp.svg)](https://pypi.org/project/pulsar-mcp)
-[![License](https://img.shields.io/github/license/milkymap/pulsar-mcp.svg)](https://github.com/milkymap/pulsar-mcp/blob/main/LICENSE)
-[![Tests](https://github.com/milkymap/pulsar-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/milkymap/pulsar-mcp/actions)
+[![PyPI](https://img.shields.io/pypi/v/omnimcp.svg)](https://pypi.org/project/omnimcp)
+[![License](https://img.shields.io/github/license/milkymap/omnimcp.svg)](https://github.com/milkymap/omnimcp/blob/main/LICENSE)
+[![Tests](https://github.com/milkymap/omnimcp/actions/workflows/tests.yml/badge.svg)](https://github.com/milkymap/omnimcp/actions)
 
 </div>
 
 ---
 
-![alt text](pulsar-mcp.jpeg)
+![alt text](omnimcp.jpeg)
 
 ---
 
@@ -43,11 +43,11 @@ That's **60K+ tokens** before the conversation starts. Add more servers and you'
 
 ## The Solution
 
-Pulsar exposes a **single `semantic_router` tool** as the only entry point to your entire MCP ecosystem. The LLM never sees individual tool definitions—just one unified interface.
+OmniMCP exposes a **single `semantic_router` tool** as the only entry point to your entire MCP ecosystem. The LLM never sees individual tool definitions—just one unified interface.
 
 ```
 Traditional: 58 tools → 55K tokens in tool definitions
-Pulsar:      1 tool   → ~500 tokens (semantic_router)
+OmniMCP:      1 tool   → ~500 tokens (semantic_router)
 ```
 
 **How it works:**
@@ -66,7 +66,7 @@ From ~60K tokens to ~3K. Access to everything, cost of almost nothing.
 
 ## Architecture: Meta-Tool Pattern
 
-Pulsar uses the **meta-tool pattern**, similar to Claude Code's Agent Skills system. Instead of exposing dozens of individual tools, it exposes a single `semantic_router` meta-tool that acts as a gateway to your entire MCP ecosystem.
+OmniMCP uses the **meta-tool pattern**, similar to Claude Code's Agent Skills system. Instead of exposing dozens of individual tools, it exposes a single `semantic_router` meta-tool that acts as a gateway to your entire MCP ecosystem.
 
 ### 
 ![alt text](pulsar_paradigm.jpeg)
@@ -84,7 +84,7 @@ tools: [
 ```
 ❌ Problems: Context bloat, tool hallucination, no caching
 
-**Pulsar's meta-tool approach:**
+**OmniMCP's meta-tool approach:**
 ```json
 {
   "tools": [
@@ -107,9 +107,9 @@ tools: [
 
 ### Parallel to Claude Skills
 
-Claude Skills and Pulsar share the same architectural insight:
+Claude Skills and OmniMCP share the same architectural insight:
 
-| Aspect | Claude Skills | Pulsar MCP |
+| Aspect | Claude Skills | OmniMCP |
 |--------|--------------|------------|
 | **Meta-tool** | `Skill` tool | `semantic_router` tool |
 | **Discovery** | Skill descriptions in tool description | Server list + hints in tool description |
@@ -131,7 +131,7 @@ Claude Skills:
 </available_skills>
 ```
 
-Pulsar `hints`:
+OmniMCP `hints`:
 ```json
 {
   "elevenlabs": {
@@ -149,7 +149,7 @@ Both inject **behavioral instructions** that shape how the LLM uses the tools, n
 
 **Multi-server orchestration in action:**
 
-Claude Code generated a video using Pulsar to coordinate multiple MCP servers.
+Claude Code generated a video using OmniMCP to coordinate multiple MCP servers.
 ![world_news_2025](https://github.com/user-attachments/assets/1f540910-3570-427a-881b-d769cb69abdf)
 🎥 (high quality) https://github.com/user-attachments/assets/c8715bdd-815a-4f92-9e8f-95043450474b
 
@@ -176,20 +176,20 @@ search_tools("web search news")
 - **Cross-server coordination** - Modal → Filesystem → Modal pipeline with automatic state management
 - **Single interface** - All operations through one `semantic_router` tool
 
-Without Pulsar: 50+ tool definitions, complex orchestration, context overflow.
-With Pulsar: Discover → Execute → Coordinate. Seamlessly.
+Without OmniMCP: 50+ tool definitions, complex orchestration, context overflow.
+With OmniMCP: Discover → Execute → Coordinate. Seamlessly.
 
 ## Installation
 
 ```bash
-uv pip install pulsar-mcp // or uv add pulsar-mcp 
+uv pip install omnimcp // or uv add omnimcp 
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-Pulsar requires several environment variables to operate. You must configure these before running `index` or `serve` commands.
+OmniMCP requires several environment variables to operate. You must configure these before running `index` or `serve` commands.
 
 **Required variables:**
 
@@ -230,7 +230,7 @@ CONTENT_STORAGE_PATH=/path/to/content_storage
 Then source it before running commands:
 ```bash
 source .env  # or use: export $(cat .env | xargs)
-uvx pulsar-mcp index --config mcp-servers.json
+uvx omnimcp index --config mcp-servers.json
 ```
 
 **Note:** For stdio transport, environment variables must also be included in your MCP client config (see [stdio transport section](#stdio-transport) below).
@@ -239,7 +239,7 @@ uvx pulsar-mcp index --config mcp-servers.json
 
 **1. Create your MCP servers config** (`mcp-servers.json`):
 
-This is an enhanced schema of Claude Desktop's MCP configuration with additional Pulsar-specific fields.
+This is an enhanced schema of Claude Desktop's MCP configuration with additional OmniMCP-specific fields.
 
 ```json
 {
@@ -295,7 +295,7 @@ This is an enhanced schema of Claude Desktop's MCP configuration with additional
 | `ignore` | boolean | If true, skip indexing this server entirely (default: false) |
 | `overwrite` | boolean | If true, force re-index even if already indexed (default: false) |
 
-**Note:** The `command`, `args`, and `env` fields are standard MCP configuration. The other fields are Pulsar enhancements for better control and discovery.
+**Note:** The `command`, `args`, and `env` fields are standard MCP configuration. The other fields are OmniMCP enhancements for better control and discovery.
 
 **2. Set environment variables**:
 
@@ -308,36 +308,36 @@ export CONTENT_STORAGE_PATH="/path/to/content"
 **3. Index your servers** (recommended before serving):
 
 ```bash
-uvx pulsar-mcp index --config mcp-servers.json
+uvx omnimcp index --config mcp-servers.json
 ```
 
 **4. Run the server**:
 
 ```bash
 # Default: HTTP transport (recommended)
-uvx pulsar-mcp serve --config mcp-servers.json --transport http --host 0.0.0.0 --port 8000
+uvx omnimcp serve --config mcp-servers.json --transport http --host 0.0.0.0 --port 8000
 
 # stdio transport (for local MCP clients - requires pre-indexing)
-uvx pulsar-mcp serve --config mcp-servers.json --transport stdio
+uvx omnimcp serve --config mcp-servers.json --transport stdio
 ```
 
 ## Transport Modes
 
-Pulsar supports two transport protocols, each optimized for different deployment scenarios:
+OmniMCP supports two transport protocols, each optimized for different deployment scenarios:
 
 ### HTTP Transport (Default - Recommended)
 
 Best for most use cases: remote access, web integrations, or when using with `mcp-remote` or `mcp-proxy`.
 
 ```bash
-uvx pulsar-mcp serve --config mcp-servers.json --transport http --host 0.0.0.0 --port 8000
+uvx omnimcp serve --config mcp-servers.json --transport http --host 0.0.0.0 --port 8000
 ```
 
 **Use cases:**
-- **Remote access** - Serve Pulsar on a server, connect from anywhere
-- **Multiple clients** - Share one Pulsar instance across multiple agents
+- **Remote access** - Serve OmniMCP on a server, connect from anywhere
+- **Multiple clients** - Share one OmniMCP instance across multiple agents
 - **Web integrations** - REST API access to your MCP ecosystem
-- **mcp-remote/mcp-proxy** - Expose Pulsar through MCP proxy layers
+- **mcp-remote/mcp-proxy** - Expose OmniMCP through MCP proxy layers
 
 **Example with [mcp-remote](https://www.npmjs.com/package/mcp-remote)**:
 ```bash
@@ -363,16 +363,16 @@ npm install mcp-remote
 
 Best for local MCP clients that communicate via standard input/output (Claude Desktop, Cline, etc.).
 
-**⚠️ IMPORTANT: You MUST run `uvx pulsar-mcp index` before using stdio mode to avoid slow startup times.**
+**⚠️ IMPORTANT: You MUST run `uvx omnimcp index` before using stdio mode to avoid slow startup times.**
 
 ```bash
-uvx pulsar-mcp serve --config mcp-servers.json --transport stdio
+uvx omnimcp serve --config mcp-servers.json --transport stdio
 ```
 
 **Recommended workflow:**
-1. **Index first** - Run `pulsar-mcp index` before adding to your MCP client config
-2. **Then mount** - Add Pulsar to your client's MCP configuration
-3. **Start serving** - Client launches Pulsar automatically via stdio
+1. **Index first** - Run `omnimcp index` before adding to your MCP client config
+2. **Then mount** - Add OmniMCP to your client's MCP configuration
+3. **Start serving** - Client launches OmniMCP automatically via stdio
 
 **Example client config** (`claude_desktop_config.json`):
 ```json
@@ -380,7 +380,7 @@ uvx pulsar-mcp serve --config mcp-servers.json --transport stdio
   "mcpServers": {
     "pulsar": {
       "command": "uvx",
-      "args": ["pulsar-mcp", "serve", "--config", "/path/to/mcp-servers.json", "--transport", "stdio"],
+      "args": ["omnimcp", "serve", "--config", "/path/to/mcp-servers.json", "--transport", "stdio"],
       "env": {
         "OPENAI_API_KEY": "sk-...",
         "QDRANT_STORAGE_PATH": "/path/to/qdrant",
@@ -392,7 +392,7 @@ uvx pulsar-mcp serve --config mcp-servers.json --transport stdio
 }
 ```
 
-**Why index before mounting?** Indexing can take time with many servers. Pre-indexing ensures instant startup when your MCP client launches Pulsar.
+**Why index before mounting?** Indexing can take time with many servers. Pre-indexing ensures instant startup when your MCP client launches OmniMCP.
 
 ### Troubleshooting `uvx` Issues
 
@@ -431,11 +431,11 @@ This means `uv` is not installed or not in your PATH. [Detailed troubleshooting 
 
 **Alternative: Use mcp-remote for HTTP mode**
 
-If `uvx` issues persist, run Pulsar via HTTP and connect through `mcp-remote`:
+If `uvx` issues persist, run OmniMCP via HTTP and connect through `mcp-remote`:
 
 ```bash
-# Terminal 1: Run Pulsar HTTP server
-uvx pulsar-mcp serve --config mcp-servers.json --transport http --port 8000
+# Terminal 1: Run OmniMCP HTTP server
+uvx omnimcp serve --config mcp-servers.json --transport http --port 8000
 ```
 
 ```json
@@ -454,7 +454,7 @@ This bypasses stdio issues and works reliably across platforms.
 
 ## How It Works
 
-Pulsar exposes a single `semantic_router` tool that acts as a gateway to your entire MCP ecosystem:
+OmniMCP exposes a single `semantic_router` tool that acts as a gateway to your entire MCP ecosystem:
 
 ```
 search_tools("read CSV files and analyze data")
@@ -511,15 +511,15 @@ poll_task_result(task_id)
 ## Development
 
 ```bash
-git clone https://github.com/milkymap/pulsar-mcp.git
-cd pulsar-mcp
+git clone https://github.com/milkymap/omnimcp.git
+cd omnimcp
 uv sync
 uv run pytest
 ```
 
 ## Related Research
 
-Pulsar MCP builds on emerging research in scalable tool selection for LLM agents:
+OmniMCP builds on emerging research in scalable tool selection for LLM agents:
 
 ### ScaleMCP: Dynamic and Auto-Synchronizing Model Context Protocol Tools
 
@@ -531,11 +531,11 @@ Pulsar MCP builds on emerging research in scalable tool selection for LLM agents
 
 Their evaluation across 5,000 financial metric servers demonstrates substantial improvements in tool retrieval and agent invocation performance, validating the importance of semantic search in MCP ecosystems.
 
-**Key insight**: Both Pulsar and ScaleMCP recognize that traditional monolithic tool repositories don't scale. The future requires dynamic, semantic-first approaches to tool discovery.
+**Key insight**: Both OmniMCP and ScaleMCP recognize that traditional monolithic tool repositories don't scale. The future requires dynamic, semantic-first approaches to tool discovery.
 
 ### Anthropic's Advanced Tool Use
 
-[Anthropic's Tool Search feature](https://www.anthropic.com/engineering/advanced-tool-use) (2025) introduces three capabilities that align with Pulsar's architecture:
+[Anthropic's Tool Search feature](https://www.anthropic.com/engineering/advanced-tool-use) (2025) introduces three capabilities that align with OmniMCP's architecture:
 
 - **Tool Search Tool** - Discover thousands of tools without consuming context window
 - **Programmatic Tool Calling** - Invoke tools in code execution environments to reduce context impact
@@ -543,7 +543,7 @@ Their evaluation across 5,000 financial metric servers demonstrates substantial 
 
 **Quote from Anthropic**: *"Tool results and definitions can sometimes consume 50,000+ tokens before an agent reads a request. Agents should discover and load tools on-demand, keeping only what's relevant for the current task."*
 
-This mirrors Pulsar's core philosophy: expose minimal interface upfront (single `semantic_router` tool), discover tools semantically, load schemas progressively.
+This mirrors OmniMCP's core philosophy: expose minimal interface upfront (single `semantic_router` tool), discover tools semantically, load schemas progressively.
 
 ### Convergent Evolution
 
@@ -554,7 +554,7 @@ These independent efforts converge on similar principles:
 3. **Agent autonomy** to query and re-query tool repositories
 4. **Context efficiency** as a first-class design constraint
 
-Pulsar MCP implements these principles through semantic routing, lazy server loading, and content offloading—making large-scale MCP ecosystems practical today.
+OmniMCP implements these principles through semantic routing, lazy server loading, and content offloading—making large-scale MCP ecosystems practical today.
 
 ## License
 
@@ -568,8 +568,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 *Multiple architectural iterations • Real-world agent deployments • Extensive testing across diverse MCP ecosystems*
 
-Pulsar emerged from solving actual problems in production agent systems where traditional approaches failed. Every feature—from semantic routing to background execution to content offloading—was battle-tested against the challenges of scaling MCP ecosystems beyond toy examples.
+OmniMCP emerged from solving actual problems in production agent systems where traditional approaches failed. Every feature—from semantic routing to background execution to content offloading—was battle-tested against the challenges of scaling MCP ecosystems beyond toy examples.
 
-We hope Pulsar will be useful to the community in building more capable and efficient agent systems.
+We hope OmniMCP will be useful to the community in building more capable and efficient agent systems.
 
 </div>

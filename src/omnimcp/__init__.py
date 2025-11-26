@@ -1,17 +1,17 @@
 import asyncio
 import click
 
-from pulsar_mcp.log import logger
-from pulsar_mcp.settings import ApiKeysSettings
-from pulsar_mcp.mcp_engine import MCPEngine
-from pulsar_mcp.mcp_server import MCPServer
-from pulsar_mcp.utilities import load_mcp_config
+from omnimcp.log import logger
+from omnimcp.settings import ApiKeysSettings
+from omnimcp.mcp_engine import MCPEngine
+from omnimcp.mcp_server import MCPServer
+from omnimcp.utilities import load_mcp_config
 from dotenv import load_dotenv
 
 
 @click.group()
 def cli():
-    """Pulsar MCP - Semantic router for MCP ecosystems"""
+    """OmniMCP - Semantic router for MCP ecosystems"""
     pass
 
 
