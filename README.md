@@ -506,6 +506,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-*Built after research on scaling MCP ecosystems*
+**Built after 6 months of intensive research and development**
+
+*Multiple architectural iterations • Real-world agent deployments • Extensive testing across diverse MCP ecosystems*
+
+Pulsar emerged from solving actual problems in production agent systems where traditional approaches failed. Every feature—from semantic routing to background execution to content offloading—was battle-tested against the challenges of scaling MCP ecosystems beyond toy examples.
+
+This isn't just another wrapper. It's the distilled experience of building agent systems that actually work at scale.
 
 </div>
