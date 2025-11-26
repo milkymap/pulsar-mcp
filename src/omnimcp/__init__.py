@@ -22,10 +22,10 @@ def cli():
 
 
 @cli.command()
-@click.option('--config', 'CONFIG_PATH', type=click.Path(exists=True, dir_okay=False, readable=True), default=None, envvar='CONFIG_PATH', help='Path to the MCP server configuration file.')
+@click.option('--config-path', 'CONFIG_PATH', type=click.Path(exists=True, dir_okay=False, readable=True), default=None, envvar='CONFIG_PATH', help='Path to the MCP server configuration file.')
 @click.option('--openai-api-key', 'OPENAI_API_KEY', type=str, default=None, envvar='OPENAI_API_KEY', help='OpenAI API key.')
-@click.option('--qdrant-storage-path', 'QDRANT_STORAGE_PATH', type=str, default=None, envvar='QDRANT_STORAGE_PATH', help='Path to Qdrant storage.')
-@click.option('--content-storage-path', 'CONTENT_STORAGE_PATH', type=str, default=None, envvar='CONTENT_STORAGE_PATH', help='Path to content storage.')
+@click.option('--qdrant-data-path', 'QDRANT_DATA_PATH', type=str, default=None, envvar='QDRANT_DATA_PATH', help='Path to Qdrant data storage.')
+@click.option('--tool-offloaded-data-path', 'TOOL_OFFLOADED_DATA_PATH', type=str, default=None, envvar='TOOL_OFFLOADED_DATA_PATH', help='Path to tool offloaded data storage.')
 @click.option('--descriptor-model-name', 'DESCRIPTOR_MODEL_NAME', type=str, default=None, envvar='DESCRIPTOR_MODEL_NAME', help='Model for generating descriptions.')
 @click.option('--embedding-model-name', 'EMBEDDING_MODEL_NAME', type=str, default=None, envvar='EMBEDDING_MODEL_NAME', help='Model for embeddings.')
 @click.option('--vision-model-name', 'VISION_MODEL_NAME', type=str, default=None, envvar='VISION_MODEL_NAME', help='Model for vision/image description.')
@@ -53,13 +53,13 @@ def index(**kwargs) -> None:
 
 
 @cli.command()
-@click.option('--config', 'CONFIG_PATH', type=click.Path(exists=True, dir_okay=False, readable=True), default=None, envvar='CONFIG_PATH', help='Path to the MCP server configuration file.')
+@click.option('--config-path', 'CONFIG_PATH', type=click.Path(exists=True, dir_okay=False, readable=True), default=None, envvar='CONFIG_PATH', help='Path to the MCP server configuration file.')
 @click.option('--transport', 'TRANSPORT', type=click.Choice(["stdio", "http"]), default=None, envvar='TRANSPORT', help='Transport method.')
 @click.option('--host', 'HOST', type=str, default=None, envvar='HOST', help='Host for HTTP transport.')
 @click.option('--port', 'PORT', type=int, default=None, envvar='PORT', help='Port for HTTP transport.')
 @click.option('--openai-api-key', 'OPENAI_API_KEY', type=str, default=None, envvar='OPENAI_API_KEY', help='OpenAI API key.')
-@click.option('--qdrant-storage-path', 'QDRANT_STORAGE_PATH', type=str, default=None, envvar='QDRANT_STORAGE_PATH', help='Path to Qdrant storage.')
-@click.option('--content-storage-path', 'CONTENT_STORAGE_PATH', type=str, default=None, envvar='CONTENT_STORAGE_PATH', help='Path to content storage.')
+@click.option('--qdrant-data-path', 'QDRANT_DATA_PATH', type=str, default=None, envvar='QDRANT_DATA_PATH', help='Path to Qdrant data storage.')
+@click.option('--tool-offloaded-data-path', 'TOOL_OFFLOADED_DATA_PATH', type=str, default=None, envvar='TOOL_OFFLOADED_DATA_PATH', help='Path to tool offloaded data storage.')
 @click.option('--descriptor-model-name', 'DESCRIPTOR_MODEL_NAME', type=str, default=None, envvar='DESCRIPTOR_MODEL_NAME', help='Model for generating descriptions.')
 @click.option('--embedding-model-name', 'EMBEDDING_MODEL_NAME', type=str, default=None, envvar='EMBEDDING_MODEL_NAME', help='Model for embeddings.')
 @click.option('--vision-model-name', 'VISION_MODEL_NAME', type=str, default=None, envvar='VISION_MODEL_NAME', help='Model for vision/image description.')

@@ -5,8 +5,8 @@ from src.omnimcp.settings import ApiKeysSettings
 class TestApiKeysSettings:
     def test_required_fields(self, monkeypatch):
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        monkeypatch.delenv("QDRANT_STORAGE_PATH", raising=False)
-        monkeypatch.delenv("CONTENT_STORAGE_PATH", raising=False)
+        monkeypatch.delenv("QDRANT_DATA_PATH", raising=False)
+        monkeypatch.delenv("TOOL_OFFLOADED_DATA_PATH", raising=False)
         monkeypatch.delenv("CONFIG_PATH", raising=False)
 
         with pytest.raises(Exception):
@@ -15,20 +15,20 @@ class TestApiKeysSettings:
     def test_minimal_config(self, monkeypatch):
         monkeypatch.setenv("CONFIG_PATH", "/tmp/config.json")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key")
-        monkeypatch.setenv("QDRANT_STORAGE_PATH", "/tmp/qdrant")
-        monkeypatch.setenv("CONTENT_STORAGE_PATH", "/tmp/content")
+        monkeypatch.setenv("QDRANT_DATA_PATH", "/tmp/qdrant_data")
+        monkeypatch.setenv("TOOL_OFFLOADED_DATA_PATH", "/tmp/tool_offloaded_data")
 
         settings = ApiKeysSettings()
         assert settings.CONFIG_PATH == "/tmp/config.json"
         assert settings.OPENAI_API_KEY == "sk-test-key"
-        assert settings.QDRANT_STORAGE_PATH == "/tmp/qdrant"
-        assert settings.CONTENT_STORAGE_PATH == "/tmp/content"
+        assert settings.QDRANT_DATA_PATH == "/tmp/qdrant_data"
+        assert settings.TOOL_OFFLOADED_DATA_PATH == "/tmp/tool_offloaded_data"
 
     def test_default_values(self, monkeypatch):
         monkeypatch.setenv("CONFIG_PATH", "/tmp/config.json")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key")
-        monkeypatch.setenv("QDRANT_STORAGE_PATH", "/tmp/qdrant")
-        monkeypatch.setenv("CONTENT_STORAGE_PATH", "/tmp/content")
+        monkeypatch.setenv("QDRANT_DATA_PATH", "/tmp/qdrant_data")
+        monkeypatch.setenv("TOOL_OFFLOADED_DATA_PATH", "/tmp/tool_offloaded_data")
 
         settings = ApiKeysSettings()
         # Server defaults
@@ -51,8 +51,8 @@ class TestApiKeysSettings:
     def test_custom_values(self, monkeypatch):
         monkeypatch.setenv("CONFIG_PATH", "/custom/config.json")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-custom-key")
-        monkeypatch.setenv("QDRANT_STORAGE_PATH", "/custom/qdrant")
-        monkeypatch.setenv("CONTENT_STORAGE_PATH", "/custom/content")
+        monkeypatch.setenv("QDRANT_DATA_PATH", "/custom/qdrant_data")
+        monkeypatch.setenv("TOOL_OFFLOADED_DATA_PATH", "/custom/tool_offloaded_data")
         monkeypatch.setenv("TRANSPORT", "stdio")
         monkeypatch.setenv("HOST", "0.0.0.0")
         monkeypatch.setenv("PORT", "9000")
@@ -66,6 +66,8 @@ class TestApiKeysSettings:
         settings = ApiKeysSettings()
         assert settings.CONFIG_PATH == "/custom/config.json"
         assert settings.OPENAI_API_KEY == "sk-custom-key"
+        assert settings.QDRANT_DATA_PATH == "/custom/qdrant_data"
+        assert settings.TOOL_OFFLOADED_DATA_PATH == "/custom/tool_offloaded_data"
         assert settings.TRANSPORT == "stdio"
         assert settings.HOST == "0.0.0.0"
         assert settings.PORT == 9000

@@ -20,8 +20,8 @@ class ApiKeysSettings(BaseSettings):
 
     # Storage settings
     INDEX_NAME: str = Field("omnimcp_idx", validation_alias="INDEX_NAME")
-    QDRANT_STORAGE_PATH: str = Field(validation_alias="QDRANT_STORAGE_PATH")
-    CONTENT_STORAGE_PATH: str = Field(validation_alias="CONTENT_STORAGE_PATH")
+    QDRANT_DATA_PATH: str = Field(validation_alias="QDRANT_DATA_PATH")
+    TOOL_OFFLOADED_DATA_PATH: str = Field(validation_alias="TOOL_OFFLOADED_DATA_PATH")
 
     # Rate limiting
     MCP_SERVER_INDEX_RATE_LIMIT: int = Field(3, validation_alias="MCP_SERVER_INDEX_RATE_LIMIT")

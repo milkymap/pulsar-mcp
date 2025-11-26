@@ -37,7 +37,7 @@ class MCPEngine:
         self.resources_manager = AsyncExitStack()
 
         # Shared services (needed for both index and serve)
-        index_service = IndexService(index_name=self.api_keys_settings.INDEX_NAME, dimensions=self.api_keys_settings.DIMENSIONS, qdrant_storage_path=self.api_keys_settings.QDRANT_STORAGE_PATH)
+        index_service = IndexService(index_name=self.api_keys_settings.INDEX_NAME, dimensions=self.api_keys_settings.DIMENSIONS, qdrant_storage_path=self.api_keys_settings.QDRANT_DATA_PATH)
         self.index_service = await self.resources_manager.enter_async_context(index_service)
 
         # Shared services for indexing and search
@@ -60,7 +60,7 @@ class MCPEngine:
             self.priority_queue = asyncio.PriorityQueue(maxsize=self.api_keys_settings.BACKGROUND_MCP_TOOL_QUEUE_SIZE)
 
             content_manager = ContentManager(
-                storage_path=self.api_keys_settings.CONTENT_STORAGE_PATH,
+                storage_path=self.api_keys_settings.TOOL_OFFLOADED_DATA_PATH,
                 openai_api_key=self.api_keys_settings.OPENAI_API_KEY,
                 max_tokens=self.api_keys_settings.MAX_RESULT_TOKENS,
                 describe_images=self.api_keys_settings.DESCRIBE_IMAGES,
