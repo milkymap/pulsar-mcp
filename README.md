@@ -196,8 +196,8 @@ OmniMCP requires several environment variables to operate. You must configure th
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | OpenAI API key for embeddings and descriptions | `sk-proj-...` |
-| `QDRANT_STORAGE_PATH` | Path to local directory for embedded Qdrant vector database (no separate server needed) | `/path/to/qdrant_data` |
-| `CONTENT_STORAGE_PATH` | Path for storing offloaded content (large results, images) | `/path/to/content_storage` |
+| `QDRANT_DATA_PATH` | Path to local directory for embedded Qdrant vector database (no separate server needed) | `/path/to/qdrant_data` |
+| `TOOL_OFFLOADED_DATA_PATH` | Path for storing offloaded content (large results, images) | `/path/to/tool_offloaded_data` |
 
 **Optional variables (with defaults):**
 
@@ -215,22 +215,22 @@ OmniMCP requires several environment variables to operate. You must configure th
 **Option 1: Export directly**
 ```bash
 export OPENAI_API_KEY="sk-proj-..."
-export QDRANT_STORAGE_PATH="/path/to/qdrant_data"
-export CONTENT_STORAGE_PATH="/path/to/content_storage"
+export QDRANT_DATA_PATH="/path/to/qdrant_data"
+export TOOL_OFFLOADED_DATA_PATH="/path/to/tool_offloaded_data"
 ```
 
 **Option 2: Create a `.env` file**
 ```bash
 # .env
 OPENAI_API_KEY=sk-proj-...
-QDRANT_STORAGE_PATH=/path/to/qdrant_data
-CONTENT_STORAGE_PATH=/path/to/content_storage
+QDRANT_DATA_PATH=/path/to/qdrant_data
+TOOL_OFFLOADED_DATA_PATH=/path/to/tool_offloaded_data
 ```
 
 Then source it before running commands:
 ```bash
 source .env  # or use: export $(cat .env | xargs)
-uvx omnimcp index --config mcp-servers.json
+uvx omnimcp index --config-path mcp-servers.json
 ```
 
 **Note:** For stdio transport, environment variables must also be included in your MCP client config (see [stdio transport section](#stdio-transport) below).
@@ -301,24 +301,24 @@ This is an enhanced schema of Claude Desktop's MCP configuration with additional
 
 ```bash
 export OPENAI_API_KEY="sk-..."
-export QDRANT_STORAGE_PATH="/path/to/qdrant"
-export CONTENT_STORAGE_PATH="/path/to/content"
+export QDRANT_DATA_PATH="/path/to/qdrant_data"
+export TOOL_OFFLOADED_DATA_PATH="/path/to/tool_offloaded_data"
 ```
 
 **3. Index your servers** (recommended before serving):
 
 ```bash
-uvx omnimcp index --config mcp-servers.json
+uvx omnimcp index --config-path mcp-servers.json
 ```
 
 **4. Run the server**:
 
 ```bash
 # Default: HTTP transport (recommended)
-uvx omnimcp serve --config mcp-servers.json --transport http --host 0.0.0.0 --port 8000
+uvx omnimcp serve --config-path mcp-servers.json --transport http --host 0.0.0.0 --port 8000
 
 # stdio transport (for local MCP clients - requires pre-indexing)
-uvx omnimcp serve --config mcp-servers.json --transport stdio
+uvx omnimcp serve --config-path mcp-servers.json --transport stdio
 ```
 
 ## Transport Modes
@@ -330,7 +330,7 @@ OmniMCP supports two transport protocols, each optimized for different deploymen
 Best for most use cases: remote access, web integrations, or when using with `mcp-remote` or `mcp-proxy`.
 
 ```bash
-uvx omnimcp serve --config mcp-servers.json --transport http --host 0.0.0.0 --port 8000
+uvx omnimcp serve --config-path mcp-servers.json --transport http --host 0.0.0.0 --port 8000
 ```
 
 **Use cases:**
@@ -347,7 +347,7 @@ npm install mcp-remote
 ```json
 {
   "mcpServers": {
-    "pulsar-remote": {
+    "omnimcp-remote": {
       "command": "npx",
       "args": ["-y", "mcp-remote", "http://your-server:port/mcp"]
     }
@@ -366,7 +366,7 @@ Best for local MCP clients that communicate via standard input/output (Claude De
 **⚠️ IMPORTANT: You MUST run `uvx omnimcp index` before using stdio mode to avoid slow startup times.**
 
 ```bash
-uvx omnimcp serve --config mcp-servers.json --transport stdio
+uvx omnimcp serve --config-path mcp-servers.json --transport stdio
 ```
 
 **Recommended workflow:**
@@ -378,13 +378,13 @@ uvx omnimcp serve --config mcp-servers.json --transport stdio
 ```json
 {
   "mcpServers": {
-    "pulsar": {
+    "omnimcp": {
       "command": "uvx",
-      "args": ["omnimcp", "serve", "--config", "/path/to/mcp-servers.json", "--transport", "stdio"],
+      "args": ["omnimcp", "serve", "--config-path", "/path/to/mcp-servers.json", "--transport", "stdio"],
       "env": {
         "OPENAI_API_KEY": "sk-...",
-        "QDRANT_STORAGE_PATH": "/path/to/qdrant",
-        "CONTENT_STORAGE_PATH": "/path/to/content"
+        "QDRANT_DATA_PATH": "/path/to/qdrant_data",
+        "TOOL_OFFLOADED_DATA_PATH": "/path/to/tool_offloaded_data"
         // add other env keys
       }
     }
@@ -435,14 +435,14 @@ If `uvx` issues persist, run OmniMCP via HTTP and connect through `mcp-remote`:
 
 ```bash
 # Terminal 1: Run OmniMCP HTTP server
-uvx omnimcp serve --config mcp-servers.json --transport http --port 8000
+uvx omnimcp serve --config-path mcp-servers.json --transport http --port 8000
 ```
 
 ```json
 // Claude Desktop config
 {
   "mcpServers": {
-    "pulsar": {
+    "omnimcp": {
       "command": "npx",
       "args": ["-y", "mcp-remote", "http://localhost:8000/mcp"]
     }
