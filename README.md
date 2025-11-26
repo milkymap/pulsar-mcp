@@ -398,7 +398,7 @@ uvx pulsar-mcp serve --config mcp-servers.json --transport stdio
 
 **Error: `spawn uvx ENOENT` or `command not found: uvx`**
 
-This means `uv` is not installed or not in your PATH. [See official MCP server guide](https://modelcontextprotocol.io/docs/develop/build-server).
+This means `uv` is not installed or not in your PATH. [Detailed troubleshooting guide](https://gist.github.com/gregelin/b90edaef851f86252c88ecc066c93719) • [Official MCP docs](https://modelcontextprotocol.io/docs/develop/build-server).
 
 **Quick fixes:**
 
