@@ -9,7 +9,12 @@ wheels/
 # Virtual environments
 .venv
 .env
+
+# Claude config files
 .claude
-mcp-servers.json
+.mcp.json
+
+
+# Media files
 *.mp4
 *.gif
