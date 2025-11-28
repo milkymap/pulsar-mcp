@@ -37,7 +37,13 @@ class MCPEngine:
         self.resources_manager = AsyncExitStack()
 
         # Shared services (needed for both index and serve)
-        index_service = IndexService(index_name=self.api_keys_settings.INDEX_NAME, dimensions=self.api_keys_settings.DIMENSIONS, qdrant_storage_path=self.api_keys_settings.QDRANT_DATA_PATH)
+        index_service = IndexService(
+            index_name=self.api_keys_settings.INDEX_NAME,
+            dimensions=self.api_keys_settings.DIMENSIONS,
+            qdrant_path=self.api_keys_settings.QDRANT_DATA_PATH,
+            qdrant_url=self.api_keys_settings.QDRANT_URL,
+            qdrant_api_key=self.api_keys_settings.QDRANT_API_KEY
+        )
         self.index_service = await self.resources_manager.enter_async_context(index_service)
 
         # Shared services for indexing and search

@@ -1,8 +1,8 @@
-import asyncio 
+import asyncio
 from uuid import uuid5, NAMESPACE_DNS
 from hashlib import sha256
 
-from typing import Dict, Any, List, Optional, Tuple  
+from typing import Dict, Any, List, Optional, Tuple
 from qdrant_client import AsyncQdrantClient, models
 
 
@@ -10,13 +10,45 @@ from ..log import logger
 from ..types import McpServerDescription, McpServerToolDescription
 
 class IndexService:
-    def __init__(self, index_name:str, dimensions:int, qdrant_storage_path:str):
+    """
+    Vector index service with support for multiple Qdrant connection modes:
+
+    1. Local file storage: IndexService(index_name, dimensions, qdrant_path="/path/to/data")
+    2. In-memory storage: IndexService(index_name, dimensions, qdrant_path=":memory:")
+    3. Remote server (Docker/Cloud): IndexService(index_name, dimensions, qdrant_url="http://...", qdrant_api_key="...")
+    """
+
+    def __init__(
+        self,
+        index_name: str,
+        dimensions: int,
+        qdrant_path: Optional[str] = None,
+        qdrant_url: Optional[str] = None,
+        qdrant_api_key: Optional[str] = None
+    ):
         self.index_name = index_name
         self.dimensions = dimensions
-        self.qdrant_storage_path = qdrant_storage_path
-        
+        self.qdrant_path = qdrant_path
+        self.qdrant_url = qdrant_url
+        self.qdrant_api_key = qdrant_api_key
+
     async def __aenter__(self):
-        self.client = AsyncQdrantClient(path=self.qdrant_storage_path)
+        if self.qdrant_url:
+            # Remote server mode (Docker or Qdrant Cloud)
+            logger.info(f"Connecting to remote Qdrant server: {self.qdrant_url}")
+            self.client = AsyncQdrantClient(
+                url=self.qdrant_url,
+                api_key=self.qdrant_api_key
+            )
+        elif self.qdrant_path == ":memory:":
+            # In-memory mode
+            logger.info("Using in-memory Qdrant storage")
+            self.client = AsyncQdrantClient(location=":memory:")
+        else:
+            # Local file storage mode
+            logger.info(f"Using local Qdrant storage: {self.qdrant_path}")
+            self.client = AsyncQdrantClient(path=self.qdrant_path)
+
         if not await self.client.collection_exists(collection_name=self.index_name):
             await self.client.create_collection(
                 collection_name=self.index_name,

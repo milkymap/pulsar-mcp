@@ -199,8 +199,16 @@ OmniMCP requires several environment variables to operate. You must configure th
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | OpenAI API key for embeddings and descriptions | `sk-proj-...` |
-| `QDRANT_DATA_PATH` | Path to local directory for embedded Qdrant vector database (no separate server needed) | `/path/to/qdrant_data` |
 | `TOOL_OFFLOADED_DATA_PATH` | Path for storing offloaded content (large results, images) | `/path/to/tool_offloaded_data` |
+
+**Qdrant connection (choose ONE mode):**
+
+| Mode | Variables | Description |
+|------|-----------|-------------|
+| **Local file** | `QDRANT_DATA_PATH=/path/to/data` | Embedded Qdrant, persists to disk |
+| **In-memory** | `QDRANT_DATA_PATH=:memory:` | Embedded Qdrant, no persistence (testing) |
+| **Remote server** | `QDRANT_URL=http://localhost:6333` | Docker or self-hosted Qdrant |
+| **Qdrant Cloud** | `QDRANT_URL=https://xxx.qdrant.io`<br>`QDRANT_API_KEY=your-api-key` | Managed Qdrant Cloud |
 
 **Optional variables (with defaults):**
 
@@ -215,18 +223,38 @@ OmniMCP requires several environment variables to operate. You must configure th
 
 **Setup methods:**
 
-**Option 1: Export directly**
+**Option 1: Local file storage (simplest)**
 ```bash
 export OPENAI_API_KEY="sk-proj-..."
 export QDRANT_DATA_PATH="/path/to/qdrant_data"
 export TOOL_OFFLOADED_DATA_PATH="/path/to/tool_offloaded_data"
 ```
 
-**Option 2: Create a `.env` file**
+**Option 2: Docker Qdrant server**
+```bash
+# Start Qdrant in Docker
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+
+# Configure OmniMCP
+export OPENAI_API_KEY="sk-proj-..."
+export QDRANT_URL="http://localhost:6333"
+export TOOL_OFFLOADED_DATA_PATH="/path/to/tool_offloaded_data"
+```
+
+**Option 3: Qdrant Cloud**
+```bash
+export OPENAI_API_KEY="sk-proj-..."
+export QDRANT_URL="https://your-cluster.qdrant.io"
+export QDRANT_API_KEY="your-qdrant-api-key"
+export TOOL_OFFLOADED_DATA_PATH="/path/to/tool_offloaded_data"
+```
+
+**Option 4: Create a `.env` file**
 ```bash
 # .env
 OPENAI_API_KEY=sk-proj-...
 QDRANT_DATA_PATH=/path/to/qdrant_data
+# OR for remote: QDRANT_URL=http://localhost:6333
 TOOL_OFFLOADED_DATA_PATH=/path/to/tool_offloaded_data
 ```
 
@@ -327,10 +355,19 @@ uvx --env-file .env omnimcp serve --config-path mcp-servers.json --transport std
 
 **Alternatively, use CLI options directly:**
 ```bash
+# With local Qdrant storage
 uvx omnimcp serve \
   --config-path mcp-servers.json \
   --openai-api-key "sk-..." \
   --qdrant-data-path /path/to/qdrant_data \
+  --tool-offloaded-data-path /path/to/tool_offloaded_data
+
+# With remote Qdrant (Docker or Cloud)
+uvx omnimcp serve \
+  --config-path mcp-servers.json \
+  --openai-api-key "sk-..." \
+  --qdrant-url "http://localhost:6333" \
+  --qdrant-api-key "optional-api-key" \
   --tool-offloaded-data-path /path/to/tool_offloaded_data
 ```
 

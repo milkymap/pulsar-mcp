@@ -19,7 +19,7 @@ def index_service(temp_storage):
     return IndexService(
         index_name="test_index",
         dimensions=1024,
-        qdrant_storage_path=temp_storage
+        qdrant_path=temp_storage
     )
 
 
