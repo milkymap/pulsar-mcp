@@ -271,26 +271,71 @@ uvx --env-file .env omnimcp index --config-path mcp-servers.json
 
 **1. Create your MCP servers config** (`mcp-servers.json`):
 
-This is an enhanced schema of Claude Desktop's MCP configuration with additional OmniMCP-specific fields.
+This is an enhanced schema of Claude Desktop's MCP configuration with additional OmniMCP-specific fields. OmniMCP supports **two transport types** for connecting to MCP servers:
+
+### Server Transport Types
+
+#### stdio Transport (Local Subprocess)
+
+Use `command` + `args` to spawn a local MCP server as a subprocess. This is the standard MCP approach used by Claude Desktop, Cursor, etc.
 
 ```json
 {
   "mcpServers": {
     "filesystem": {
-      "command": "npx",  // or "uvx", "docker", any executable
+      "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"],
-      "env": {},  // optional: environment variables for this server
-      "timeout": 30.0,  // optional: seconds to wait for MCP server startup (default: 30)
-      "hints": ["file operations", "read write files"],  // optional: help semantic search discover this server
-      "blocked_tools": [],  // optional: tools to index but block at runtime
-      "ignore": false,  // optional: skip indexing this server entirely
-      "overwrite": false  // optional: force re-indexing even if already indexed
+      "env": {},
+      "timeout": 30.0
+    }
+  }
+}
+```
+
+#### HTTP Transport (Remote Server)
+
+Use `url` to connect to a remote MCP server via Streamable HTTP. This eliminates the need for `mcp-remote` or `mcp-proxy` bridges—just provide the URL directly.
+
+```json
+{
+  "mcpServers": {
+    "remote-api": {
+      "url": "https://mcp.example.com/api",
+      "headers": {"Authorization": "Bearer your-token"},
+      "timeout": 60.0
+    }
+  }
+}
+```
+
+**When to use HTTP transport:**
+- Remote MCP servers (cloud APIs, shared services)
+- Servers already running as HTTP endpoints
+- Avoid spawning subprocesses for every server
+- Direct connection without `mcp-remote` bridge overhead
+
+### Mixed Configuration Example
+
+You can mix both transport types in a single config:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"],
+      "env": {},
+      "timeout": 30.0,
+      "hints": ["file operations", "read write files"],
+      "blocked_tools": [],
+      "ignore": false,
+      "overwrite": false
     },
     "github": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {"GITHUB_TOKEN": "..."},
-      "blocked_tools": ["delete_repository", "fork_repository"]  // indexed but execution blocked
+      "blocked_tools": ["delete_repository", "fork_repository"]
     },
     "elevenlabs": {
       "command": "uvx",
@@ -301,33 +346,48 @@ This is an enhanced schema of Claude Desktop's MCP configuration with additional
         "Proactively offer to play audio using the ElevenLabs tool when contextually relevant"
       ]
     },
-    "exa": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.exa.ai/mcp"],
-      "env": {"EXA_API_KEY": "..."},
+    "exa-direct": {
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {"Authorization": "Bearer your-exa-api-key"},
+      "timeout": 60.0,
       "hints": [
         "Always execute web searches in background mode to avoid blocking the conversation",
         "Multiple Exa tool calls can be fired in parallel to efficiently gather information from different sources"
       ]
+    },
+    "company-internal-api": {
+      "url": "http://internal-mcp.company.com:8080/mcp",
+      "headers": {"X-API-Key": "internal-key"},
+      "timeout": 120.0,
+      "hints": ["Internal company data access", "Use for employee and project queries"]
     }
   }
 }
 ```
 
-**Enhanced Configuration Fields:**
+### Configuration Fields Reference
+
+**Transport-specific fields (choose ONE):**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `command` | string | Executable to run (npx, uvx, docker, python, etc.) |
-| `args` | array | Command-line arguments passed to the executable |
-| `env` | object | Environment variables for this MCP server |
-| `timeout` | number | Seconds to wait for server startup (default: 30.0) |
+| `command` | string | **stdio transport:** Executable to run (npx, uvx, docker, python, etc.) |
+| `args` | array | **stdio transport:** Command-line arguments passed to the executable |
+| `env` | object | **stdio transport:** Environment variables for this MCP server |
+| `url` | string | **HTTP transport:** URL of the remote MCP server endpoint |
+| `headers` | object | **HTTP transport:** HTTP headers (e.g., Authorization, API keys) |
+
+**Shared fields (work with both transports):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timeout` | number | Seconds to wait for server startup/connection (default: 30.0) |
 | `hints` | array | **Powerful!** Guide the LLM on how to use this server. Used for both discovery and execution instructions. Examples: "Always execute in background mode", "Multiple calls can be fired in parallel", "Proactively offer when contextually relevant" |
 | `blocked_tools` | array | Tool names that will be indexed but blocked from execution |
 | `ignore` | boolean | If true, skip indexing this server entirely (default: false) |
 | `overwrite` | boolean | If true, force re-index even if already indexed (default: false) |
 
-**Note:** The `command`, `args`, and `env` fields are standard MCP configuration. The other fields are OmniMCP enhancements for better control and discovery.
+**Note:** You must specify either `command` (stdio) OR `url` (HTTP), but not both. The transport type is auto-detected based on which field is present.
 
 **2. Set environment variables**:
 
